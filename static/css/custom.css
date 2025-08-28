@@ -25,7 +25,7 @@ body {
     font-family: 'Segoe UI', 'Roboto', sans-serif;
     color: var(--texto-escuro);
     margin: 0;
-        padding: 0;
+    padding: 0;
 }
 
 .container-premium {
@@ -39,7 +39,7 @@ body {
     flex-grow: 1;
     border: 1px solid var(--borda);
     display: flex;
-        flex-direction: column;
+    flex-direction: column;
         min-height: 650px;
         /* Altura mínima garantida */
 }
@@ -93,7 +93,7 @@ body {
 .main-content {
     display: flex;
     flex-grow: 1;
-        min-height: 500px;
+    min-height: 500px;
         /* Altura mínima garantida */
 }
 
@@ -238,7 +238,7 @@ body {
     text-align: center;
     color: var(--texto-claro);
     width: 100%;
-        display: flex;
+    display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
@@ -345,6 +345,7 @@ body {
     font-size: 14px;
     line-height: 1.5;
     min-height: 180px;
+    max-height: 180px;
     resize: none;
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-sizing: border-box;
@@ -491,6 +492,7 @@ body {
     .progress-container {
         width: 95%;
     }
+    
         .container-premium {
             min-height: auto;
         }
