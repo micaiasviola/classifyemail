@@ -24,6 +24,8 @@ body {
     flex-direction: column;
     font-family: 'Segoe UI', 'Roboto', sans-serif;
     color: var(--texto-escuro);
+    margin: 0;
+        padding: 0;
 }
 
 .container-premium {
@@ -36,6 +38,10 @@ body {
     margin: 20px auto;
     flex-grow: 1;
     border: 1px solid var(--borda);
+    display: flex;
+        flex-direction: column;
+        min-height: 650px;
+        /* Altura mínima garantida */
 }
 
 .header {
@@ -46,6 +52,7 @@ body {
     align-items: center;
     justify-content: space-between;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
 }
 
 .logo {
@@ -85,7 +92,9 @@ body {
 
 .main-content {
     display: flex;
-    min-height: 600px;
+    flex-grow: 1;
+        min-height: 500px;
+        /* Altura mínima garantida */
 }
 
 .input-section {
@@ -95,6 +104,8 @@ body {
     display: flex;
     flex-direction: column;
     border-right: 1px solid rgba(255, 255, 255, 0.1);
+    min-height: 100%;
+        /* Garante que ocupa toda a altura */
 }
 
 .processing-section {
@@ -106,6 +117,8 @@ body {
     justify-content: center;
     align-items: center;
     border-right: 1px solid rgba(255, 255, 255, 0.1);
+    min-height: 100%;
+        /* Garante que ocupa toda a altura */
 }
 
 .result-section {
@@ -114,6 +127,8 @@ body {
     padding: 25px;
     display: flex;
     flex-direction: column;
+    min-height: 100%;
+        /* Garante que ocupa toda a altura */
 }
 
 .section-title {
@@ -145,6 +160,8 @@ body {
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    min-height: 180px;
+        /* Altura mínima garantida */
 }
 
 .upload-area:hover {
@@ -182,6 +199,7 @@ body {
     margin-bottom: 20px;
     font-size: 15px;
     transition: all 0.3s ease;
+    box-sizing: border-box;
 }
 
 .text-input:focus {
@@ -206,6 +224,8 @@ body {
     transition: all 0.3s ease;
     width: 100%;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    margin-top: auto;
+        /* Empurra o botão para baixo */
 }
 
 .btn-processar:hover {
@@ -217,6 +237,12 @@ body {
 .processing-content {
     text-align: center;
     color: var(--texto-claro);
+    width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        flex-grow: 1;
 }
 
 .processing-icon {
@@ -226,7 +252,7 @@ body {
 }
 
 .progress-container {
-    width: 100%;
+    width: 80%;
     background: rgba(255, 255, 255, 0.2);
     height: 10px;
     border-radius: 8px;
@@ -248,6 +274,7 @@ body {
     gap: 12px;
     margin-top: 20px;
     width: 100%;
+    max-width: 300px;
 }
 
 .stat-box {
@@ -283,6 +310,8 @@ body {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
+    min-height: 300px;
+        /* Altura mínima garantida */
 }
 
 .classification-badge {
@@ -295,6 +324,7 @@ body {
     text-align: center;
     background: var(--cinza-medio);
     color: var(--texto-claro);
+    align-self: flex-start;
 }
 
 .productive {
@@ -314,10 +344,10 @@ body {
     margin-bottom: 18px;
     font-size: 14px;
     line-height: 1.5;
-    max-height: 280px;
-    min-height: 140px;
+    min-height: 180px;
     resize: none;
     border: 1px solid rgba(255, 255, 255, 0.1);
+    box-sizing: border-box;
 }
 
 .response-text:empty::before {
@@ -330,6 +360,8 @@ body {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
+    margin-top: auto;
+        /* Empurra as estatísticas para baixo */
 }
 
 .result-stat {
@@ -388,6 +420,7 @@ body {
     text-align: center;
     font-size: 13px;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
 }
 
 /* Animações */
@@ -435,6 +468,8 @@ body {
     .result-section {
         border-right: none;
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        min-height: 400px;
+            /* Altura mínima em mobile */
     }
 
     .header {
@@ -456,6 +491,9 @@ body {
     .progress-container {
         width: 95%;
     }
+        .container-premium {
+            min-height: auto;
+        }
 }
 
 /* Melhorias de acessibilidade */
