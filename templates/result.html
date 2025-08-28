@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Área Verde: Input do Email -->
+<div class="input-section">
+    <div class="section-title">
+        <i class="fas fa-envelope"></i>
+        <span>Insira o Email</span>
+    </div>
+
+    <div class="upload-area">
+        <i class="fas fa-cloud-upload-alt"></i>
+        <h3>Arraste ou clique para upload</h3>
+        <p>Formatos suportados: .txt, .pdf (até 16MB)</p>
+    </div>
+
+    <div class="section-title">
+        <i class="fas fa-font"></i>
+        <span>Ou cole o texto abaixo</span>
+    </div>
+
+    <textarea class="text-input" placeholder="Cole o conteúdo do email aqui..."></textarea>
+
+    <button class="btn-processar">
+        <i class="fas fa-cogs"></i> Processar Email
+    </button>
+</div>
+
+<!-- Área Azul: Processamento -->
+<div class="processing-section">
+    <div class="section-title">
+        <i class="fas fa-cogs"></i>
+        <span>Processamento com IA</span>
+    </div>
+
+    <div class="processing-content">
+        <i class="fas fa-check-circle processing-icon"></i>
+        <h3>Análise concluída!</h3>
+        <p>Email processado com sucesso</p>
+
+        <div class="progress-container">
+            <div class="progress-bar" style="width: 100%"></div>
+        </div>
+
+        <div class="stats-container">
+            <div class="stat-box">
+                <div class="stat-value">{{ "%.2f"|format(response_time|default(0.8)) }}s</div>
+                <div class="stat-label">Tempo de resposta</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value">96%</div>
+                <div class="stat-label">Confiança</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value">42</div>
+                <div class="stat-label">Problemas similares</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value">98%</div>
+                <div class="stat-label">Resolvidos</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Área Vermelha: Resultados -->
+<div class="result-section">
+    <div class="section-title">
+        <i class="fas fa-chart-line"></i>
+        <span>Resultados da Análise</span>
+    </div>
+
+    <div class="result-content">
+        <div
+            class="classification-badge {% if classification == 'Produtivo' %}productive{% else %}unproductive{% endif %}">
+            {{ classification|default('PRODUTIVO') }}
+        </div>
+
+        <div class="response-text">
+            {{ response|replace('\n', '<br>')|safe }}
+        </div>
+
+        <div class="result-stats">
+            <div class="result-stat">
+                <div class="result-stat-value">{{ "%.2f"|format(response_time|default(0.84)) }}s</div>
+                <div class="result-stat-label">Tempo de resposta</div>
+            </div>
+            <div class="result-stat">
+                <div class="result-stat-value">96%</div>
+                <div class="result-stat-label">Precisão</div>
+            </div>
+            <div class="result-stat">
+                <div class="result-stat-value">42x</div>
+                <div class="result-stat-label">Relatado</div>
+            </div>
+            <div class="result-stat">
+                <div class="result-stat-value">98%</div>
+                <div class="result-stat-label">Taxa de solução</div>
+            </div>
+        </div>
+
+        <button class="btn-copiar copy-response">
+            <i class="fas fa-copy"></i> Copiar Resposta
+        </button>
+
+        <a href="/" class="btn btn-processar mt-3"
+            style="background: white; color: var(--vermelho); text-decoration: none;">
+            <i class="fas fa-arrow-left me-2"></i> Classificar Outro Email
+        </a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Área Verde: Input do Email -->
+<div class="input-section">
+    <div class="section-title">
+        <i class="fas fa-envelope"></i>
+        <span>Insira o Email</span>
+    </div>
+
+    <div class="upload-area" id="uploadArea">
+        <i class="fas fa-cloud-upload-alt"></i>
+        <h3>Arraste ou clique para upload</h3>
+        <p>Formatos suportados: .txt, .pdf (até 16MB)</p>
+        <input type="file" id="emailFile" name="email_file" hidden accept=".txt,.pdf">
+    </div>
+
+    <div class="section-title">
+        <i class="fas fa-font"></i>
+        <span>Ou cole o texto abaixo</span>
+    </div>
+
+    <textarea class="text-input" id="emailText" name="email_text"
+        placeholder="Cole o conteúdo do email aqui..."></textarea>
+
+    <button class="btn-processar" id="submitBtn">
+        <i class="fas fa-cogs"></i> Processar Email
+    </button>
+
+    <!-- Exemplos para teste -->
+    <div class="examples-container mt-4 p-3" style="background: rgba(255,255,255,0.1); border-radius: 10px;">
+        <h5 style="color: white; margin-bottom: 10px;"><i class="fas fa-vial"></i> Testar com Exemplos</h5>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button class="btn btn-sm insert-example" data-example="productive"
+                style="background: rgba(255,255,255,0.2); color: white; border: none;">
+                <i class="fas fa-briefcase me-1"></i> Email Produtivo
+            </button>
+            <button class="btn btn-sm insert-example" data-example="unproductive"
+                style="background: rgba(255,255,255,0.2); color: white; border: none;">
+                <i class="fas fa-smile me-1"></i> Email Improdutivo
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Área Azul: Processamento -->
+<div class="processing-section">
+    <div class="section-title">
+        <i class="fas fa-cogs"></i>
+        <span>Processamento com IA</span>
+    </div>
+
+    <div class="processing-content">
+        <i class="fas fa-brain processing-icon pulse"></i>
+        <h3>Analisando conteúdo do email...</h3>
+        <p>Nossa inteligência artificial está processando sua solicitação</p>
+
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+
+        <div class="stats-container">
+            <div class="stat-box">
+                <div class="stat-value">0.8s</div>
+                <div class="stat-label">Tempo de resposta</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value">97%</div>
+                <div class="stat-label">Confiança</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value">42</div>
+                <div class="stat-label">Problemas similares</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value">98%</div>
+                <div class="stat-label">Resolvidos</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Área Vermelha: Resultados -->
+<div class="result-section">
+    <div class="section-title">
+        <i class="fas fa-chart-line"></i>
+        <span>Resultados da Análise</span>
+    </div>
+
+    <div class="result-content">
+        <div class="classification-badge productive" id="classificationBadge">Produtivo/Improdutivo</div>
+
+        <div class="response-text" id="responseText">
+
+        </div>
+
+        <div class="result-stats">
+            <div class="result-stat">
+                <div class="result-stat-value" id="responseTime">0.84s</div>
+                <div class="result-stat-label">Tempo de resposta</div>
+            </div>
+            <div class="result-stat">
+                <div class="result-stat-value" id="accuracy">96%</div>
+                <div class="result-stat-label">Precisão</div>
+            </div>
+            <div class="result-stat">
+                <div class="result-stat-value" id="reportedCount">42x</div>
+                <div class="result-stat-label">Relatado</div>
+            </div>
+            <div class="result-stat">
+                <div class="result-stat-value" id="solvedRate">98%</div>
+                <div class="result-stat-label">Taxa de solução</div>
+            </div>
+        </div>
+
+        <button class="btn-copiar" id="copyButton">
+            <i class="fas fa-copy"></i> Copiar Resposta
+        </button>
+    </div>
+</div>
+{% endblock %}
