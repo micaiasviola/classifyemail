@@ -1,0 +1,7 @@
+Este software é fornecido exclusivamente para fins de avaliação, testes e demonstração.
+
+É proibido o uso comercial, distribuição, modificação ou publicação sem autorização expressa do(s) autor(es).
+
+O uso deste sistema implica na aceitação destas condições.
+
+Para obter permissão para outros usos, entre em contato com o autor do projeto.

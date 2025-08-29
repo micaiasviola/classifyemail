@@ -14,19 +14,26 @@ from flask import (
     session, redirect, url_for, send_from_directory
 )
 
-# ----- Imports da sua aplicação -----
+# ----- Imports da minha aplicação -----
+# Função principal que processa e classifica o email
 from utils.fluxo_email import processar_email_com_resposta
+
+# Função para extrair texto de PDFs
 from utils.email_processor import extract_text_from_pdf
 
 # ===== Ambiente / Logging =====
-load_dotenv()
+load_dotenv()  # Carrega variáveis do arquivo .env
 
-API_KEY = os.environ.get("API_KEY")  # busca a variável do ambiente
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
+# Busca API_KEY do ambiente (não usada diretamente aqui)
+API_KEY = os.environ.get("API_KEY")
+logging.basicConfig(level=logging.INFO)  # Configura nível de log
+logger = logging.getLogger(__name__)     # Instancia logger para o app
 
 def _gerar_secret_key() -> str:
+    """
+    Gera uma chave secreta para sessões Flask.
+    Usa a variável de ambiente SECRET_KEY se existir, senão gera uma aleatória.
+    """
     sk = os.getenv("SECRET_KEY")
     if not sk:
         sk = secrets.token_hex(24)
@@ -35,20 +42,10 @@ def _gerar_secret_key() -> str:
 
 
 # ===== Flask App =====
-app = Flask(__name__)
+app = Flask(__name__)  # Cria instância do Flask
+# Define chave secreta para sessões
 app.config["SECRET_KEY"] = _gerar_secret_key()
-app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16 MB
-
-# (Opcional) servir favicon local para evitar erros 404 de /favicon.ico
-
-
-@app.route("/favicon.ico")
-def favicon():
-    caminho_static = os.path.join(app.root_path, "static")
-    return send_from_directory(
-        caminho_static, "favicon.ico", mimetype="image/vnd.microsoft.icon"
-    )
-
+app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # Limita uploads a 16MB
 
 # ===== Helpers =====
 def _obter_conteudo_email_da_requisicao(req) -> str:
@@ -58,13 +55,13 @@ def _obter_conteudo_email_da_requisicao(req) -> str:
       - Upload 'email_file' (txt ou pdf)
     Lança ValueError com mensagem amigável em caso de erro.
     """
-    # Texto digitado
-    texto = req.form.get("email_text", "").strip()
+    texto = req.form.get("email_text", "").strip(
+    )  # Tenta pegar texto digitado
     if texto:
         logger.info("Processando texto direto de email.")
         return texto
 
-    # Arquivo enviado
+    # Se não há texto, tenta pegar arquivo
     if "email_file" in req.files:
         arquivo = req.files["email_file"]
         if not arquivo or not arquivo.filename:
@@ -74,23 +71,22 @@ def _obter_conteudo_email_da_requisicao(req) -> str:
         logger.info(f"Processando arquivo: {nome}")
 
         if nome.endswith(".txt"):
-            # Tenta decodificar como UTF-8; ignora erros de encoding
+            # Lê arquivo txt como UTF-8
             return arquivo.read().decode("utf-8", errors="ignore").strip()
         if nome.endswith(".pdf"):
+            # Extrai texto de PDF
             return extract_text_from_pdf(arquivo).strip()
 
         raise ValueError("Formato não suportado. Envie .txt ou .pdf.")
 
-    # Nada encontrado
+    # Se não há texto nem arquivo
     raise ValueError("Nenhum conteúdo fornecido.")
-
 
 # ===== Rotas =====
 @app.route("/")
 def index():
     """Página inicial com formulário."""
-    return render_template("index.html")
-
+    return render_template("index.html")  # Renderiza página principal
 
 @app.route("/classify", methods=["POST"])
 def classify():
@@ -101,18 +97,21 @@ def classify():
     Armazena na sessão e devolve JSON com URL para a página de resultado.
     """
     try:
-        conteudo = _obter_conteudo_email_da_requisicao(request)
+        conteudo = _obter_conteudo_email_da_requisicao(
+            request)  # Pega conteúdo do email
 
-        # Fluxo único (evita divergência entre rotas/implementações)
-        resultado = processar_email_com_resposta(conteudo)
-        categoria = resultado.get("categoria", "Improdutivo")
+        resultado = processar_email_com_resposta(
+            conteudo)       # Classifica e gera resposta
+        categoria = resultado.get(
+            "categoria", "Improdutivo")    # Pega categoria
         resposta = resultado.get(
-            "resposta", "Não foi possível gerar a resposta.")
+            "resposta", "Não foi possível gerar a resposta.")  # Pega resposta
 
-        # Guarda um preview do conteúdo original
+        # Guarda um preview do conteúdo original (até 1000 caracteres)
         preview = conteudo if len(
             conteudo) <= 1000 else f"{conteudo[:1000]}..."
 
+        # Salva resultado na sessão do usuário
         session["result"] = {
             "original_content": preview,
             "classification": categoria,
@@ -120,23 +119,24 @@ def classify():
         }
 
         logger.info(f"Email classificado como: {categoria}")
+        # Retorna URL para página de resultado
         return jsonify({"success": True, "redirect": url_for("result")})
 
     except ValueError as e:
-        # Erros esperados do usuário (sem stacktrace)
+        # Erros esperados do usuário (ex: arquivo inválido)
         logger.warning(f"Requisição inválida: {e}")
         return jsonify({"error": str(e)}), 400
     except Exception as e:
-        # Erros inesperados (mostra mensagem genérica ao cliente)
+        # Erros inesperados (exibe mensagem genérica)
         logger.exception("Erro ao processar email:")
         return jsonify({"error": f"Erro interno do servidor: {str(e)}"}), 500
-
 
 @app.route("/result")
 def result():
     """Exibe os resultados da última classificação/geração."""
     data = session.get("result")
     if not data:
+        # Se não há resultado, volta para início
         return redirect(url_for("index"))
 
     return render_template(
@@ -145,7 +145,6 @@ def result():
         classification=data["classification"],
         response=data["response"],
     )
-
 
 @app.route("/api/classify", methods=["POST"])
 def api_classify():
@@ -177,24 +176,32 @@ def api_classify():
         logger.exception("Erro na API /api/classify:")
         return jsonify({"error": f"Erro interno do servidor: {str(e)}"}), 500
 
-
 # ===== Tratadores de erro =====
 @app.errorhandler(413)
 def too_large(e):
+    # Retorna erro se arquivo for maior que 16MB
     return jsonify({"error": "Arquivo muito grande. Máx: 16MB"}), 413
-
 
 @app.errorhandler(404)
 def not_found(e):
-    # Se não houver 404.html, você pode trocar por um retorno JSON:
-    # return jsonify({"error": "Rota não encontrada."}), 404
+    # Retorna página 404 customizada
     return render_template("404.html"), 404
 
 
+@app.route("/favicon.ico")
+def favicon():
+    # Serve favicon local para evitar erro no navegador
+    caminho_static = os.path.join(app.root_path, "static")
+    return send_from_directory(
+        caminho_static, "favicon.ico", mimetype="image/vnd.microsoft.icon"
+    )
+
 # ===== Execução =====
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    debug_mode = os.environ.get("DEBUG", "False").lower() == "true"
+    port = int(os.environ.get("PORT", 5000))  # Porta do servidor
+    debug_mode = os.environ.get(
+        "DEBUG", "False").lower() == "true"  # Modo debug
     if debug_mode:
         logger.warning("⚠️  MODO DEBUG ATIVADO - Não use em produção!")
+    # Inicia o servidor Flask
     app.run(host="0.0.0.0", port=port, debug=debug_mode)

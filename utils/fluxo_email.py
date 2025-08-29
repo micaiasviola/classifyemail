@@ -1,8 +1,8 @@
 """
 Fluxo completo de processamento de emails:
-1. Classificação: Produtivo / Improdutivo
+1. Classificação: Produtivo / Improdutivo 
 2. Geração de resposta automática sugerida
-Autor: Micaías
+Autor: Micaías Viola
 Data: 2025-08-27
 """
 
