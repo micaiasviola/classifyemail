@@ -1,7 +1,6 @@
-# utils/classifier.py
 """
-Classificador de Emails com IA Zero-Shot + Heurísticas + Logs detalhados
-Mais robusto, interpretável e com fallback inteligente.
+Classificador de Emails com IA Zero-Shot + Heurísticas Avançadas
+Mais rigoroso para classificar apenas emails de trabalho/negócio como produtivos.
 Autor: Micaías Viola
 Data: 2025-08-29
 """
@@ -9,7 +8,6 @@ Data: 2025-08-29
 import os
 import requests
 from dotenv import load_dotenv
-from utils.email_processor import clean_email_content
 import time
 import re
 
@@ -21,64 +19,85 @@ HF_API_TOKEN = os.getenv("HF_API_TOKEN")
 if not HF_API_TOKEN:
     raise ValueError("Defina HF_API_TOKEN no .env")
 
-HF_MODEL = "facebook/bart-large-mnli"  # modelo mais robusto
+HF_MODEL = "facebook/bart-large-mnli"
 HF_API_URL = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
 HEADERS = {"Authorization": f"Bearer {HF_API_TOKEN}"}
 
-CANDIDATE_LABELS = [  # Lista de classes naturais para a classificação, para cada label a IA retorna uma pontuação de confiança (score)
-    "email pedindo ajuda, suporte técnico ou resolução de problema (produtivo)",
-    "email solicitando informações, orçamento ou documentos (produtivo)",
-    "email sobre reunião, projeto, tarefa ou trabalho em andamento (produtivo)",
-    "email de propaganda, marketing, desconto ou spam (improdutivo)",
-    "email pessoal, cumprimentos, conversa informal ou correntes (improdutivo)"
+# Classes mais separadas para melhorar precisão
+CANDIDATE_LABELS = [
+    "email sobre trabalho, projetos, tarefas, reuniões ou negócios (produtivo)",
+    "email solicitando informações, orçamento ou documentos profissionais (produtivo)",
+    "email solicitando suporte técnico ou resolução de problemas (produtivo)",
+    "email de propaganda ou marketing legítimo (improdutivo)",
+    "email de golpe, phishing, fraude ou scam (improdutivo)",
+    "email pessoal, cumprimentos, conversa informal, correntes ou brincadeiras (improdutivo)",
+    "email de saudações, datas comemorativas ou felicitações (improdutivo)"
 ]
 
 LABEL_MAP = {
-    "email pedindo ajuda, suporte técnico ou resolução de problema (produtivo)": "Produtivo",
-    "email solicitando informações, orçamento ou documentos (produtivo)": "Produtivo",
-    "email sobre reunião, projeto, tarefa ou trabalho em andamento (produtivo)": "Produtivo",
-    "email de propaganda, marketing, desconto ou spam (improdutivo)": "Improdutivo",
-    "email pessoal, cumprimentos, conversa informal ou correntes (improdutivo)": "Improdutivo"
+    "email sobre trabalho, projetos, tarefas, reuniões ou negócios (produtivo)": "Produtivo",
+    "email solicitando informações, orçamento ou documentos profissionais (produtivo)": "Produtivo",
+    "email solicitando suporte técnico ou resolução de problemas (produtivo)": "Produtivo",
+    "email de propaganda ou marketing legítimo (improdutivo)": "Improdutivo",
+    "email de golpe, phishing, fraude ou scam (improdutivo)": "Improdutivo",
+    "email pessoal, cumprimentos, conversa informal, correntes ou brincadeiras (improdutivo)": "Improdutivo",
+    "email de saudações, datas comemorativas ou felicitações (improdutivo)": "Improdutivo"
 }
 
-CONFIDENCE_THRESHOLD = 0.55
+# Ajuste para evitar falsos positivos
+CONFIDENCE_THRESHOLD = 0.75
+CONFIDENCE_MARGIN = 0.15
 
+# Heurísticas — primeiro filtro rápido
 KEYWORDS_PRODUTIVO = [
     "proposta", "orçamento", "reunião", "documento", "contrato", "pedido",
-    "suporte", "assistência", "erro", "problema", "bloqueio", "relatório"
+    "suporte", "assistência", "erro", "problema", "bloqueio", "relatório",
+    "projeto", "implementação", "análise", "negócio", "parceria", "pagamento"
 ]
-KEYWORDS_IMPRODUTIVO = ["desconto", "promoção",
-                        "ganhe", "oferta", "cupom", "publicidade"]
+
+# Golpes e spam explícitos — prioridade máxima
+KEYWORDS_GOLPE = [
+    "parabéns", "contemplado", "benefício exclusivo", "últimos dígitos do cpf",
+    "clique no link", "carro zero", "pix imediato", "ganhou", "prêmio", "sorteio",
+    "transferência imediata", "oferta imperdível", "bônus garantido", "resgate seu benefício"
+]
+
+# Marketing genérico (não golpe, mas improdutivo)
+KEYWORDS_MARKETING = [
+    "desconto", "promoção", "ganhe", "oferta", "cupom", "publicidade",
+    "cashback", "black friday", "frete grátis", "oferta relâmpago"
+]
 
 
-# ==============================
-# FUNÇÃO PRINCIPAL
-# ==============================
 def classificar_email(email_content: str) -> str:
     """
     Classifica um email como Produtivo ou Improdutivo usando IA Zero-Shot.
-    Inclui threshold de confiança, pré-processamento, heurísticas e logs detalhados.
+    Inclui heurísticas fortes para golpes, thresholds mais altos e logs detalhados.
     """
-    # Limpa conteúdo do e-mail
-    email_content = clean_email_content(email_content)
+    # Normaliza espaços e caracteres
     email_content = re.sub(r"\s+", " ", email_content).strip()
 
-    # Se o e-mail está vazio ou muito curto → improdutivo direto
+    # Se o e-mail está vazio ou muito curto → improdutivo
     if not email_content or len(email_content.split()) < 3:
-        print("[LOG] Email muito curto → classificado como 'Improdutivo'")
+        print("[LOG] Email muito curto → 'Improdutivo'")
         return "Improdutivo"
 
-    # Heurísticas baseadas em palavras-chave antes de chamar a IA
     lower_content = email_content.lower()
-    if any(k in lower_content for k in KEYWORDS_PRODUTIVO):
-        print("[LOG] Palavra-chave produtiva detectada → classificado como 'Produtivo'")
-        return "Produtivo"
-    if any(k in lower_content for k in KEYWORDS_IMPRODUTIVO):
-        print(
-            "[LOG] Palavra-chave improdutiva detectada → classificado como 'Improdutivo'")
+
+    # 1) Golpes têm prioridade máxima → bloqueia antes da IA
+    if any(k in lower_content for k in KEYWORDS_GOLPE):
+        print("[LOG] Palavra-chave de golpe detectada → 'Improdutivo'")
         return "Improdutivo"
 
-    # Prepara requisição para a API
+    # 2) Marketing detectado → improdutivo
+    if any(k in lower_content for k in KEYWORDS_MARKETING):
+        print("[LOG] Palavra-chave de marketing detectada → 'Improdutivo'")
+        return "Improdutivo"
+
+    # 3) Palavras produtivas → sinal verde provisório, mas ainda passará pela IA
+    heuristica_produtivo = any(k in lower_content for k in KEYWORDS_PRODUTIVO)
+
+    # 4) Prepara requisição para IA
     payload = {
         "inputs": email_content,
         "parameters": {
@@ -88,12 +107,11 @@ def classificar_email(email_content: str) -> str:
         "options": {"wait_for_model": True}
     }
 
-    # Tenta 3 vezes em caso de erro ou timeout
+    # Tenta 3 vezes em caso de falha
     for attempt in range(3):
         try:
             response = requests.post(
-                HF_API_URL, headers=HEADERS, json=payload, timeout=60
-            )
+                HF_API_URL, headers=HEADERS, json=payload, timeout=60)
             response.raise_for_status()
             result = response.json()
 
@@ -101,51 +119,52 @@ def classificar_email(email_content: str) -> str:
                 labels = result["labels"]
                 scores = result["scores"]
 
-                # Log detalhado dos scores
+                # Log detalhado
                 print("\n[LOG] --- RESULTADO IA ---")
                 for label, score in zip(labels, scores):
                     print(f"[LOG] {label}: {score:.4f}")
                 print("[LOG] ----------------------")
 
-                # Escolhe o label com o maior score, garantindo que o resultado seja o mais provável
-                top_score = max(scores)
-                top_label = labels[scores.index(top_score)]
+                top_score = scores[0]
+                second_score = scores[1] if len(scores) > 1 else 0
+                top_label = labels[0]
+                final_label = LABEL_MAP.get(top_label, "Improdutivo")
 
-                if top_score < CONFIDENCE_THRESHOLD:
+                # 5) Confiança mínima — só confia se score for bem alto
+                if top_score < CONFIDENCE_THRESHOLD or (top_score - second_score) < CONFIDENCE_MARGIN:
                     print(
-                        f"[LOG] Confiança baixa ({top_score:.2f}) → usando fallback")
-                    return fallback_classificacao(email_content)
+                        f"[LOG] Confiança baixa ({top_score:.2f}) → fallback")
+                    return fallback_classificacao(email_content, heuristica_produtivo)
 
-                print(f"[LOG] Escolhido pela IA: '{LABEL_MAP.get(top_label, 'Improdutivo')}' "
-                      f"(confiança: {top_score:.2f})")
-                return LABEL_MAP.get(top_label, "Improdutivo")
+                # 6) IA validou → retorna
+                print(
+                    f"[LOG] Escolhido: '{final_label}' (confiança: {top_score:.2f})")
+                return final_label
 
-            print("[LOG] Resposta inesperada da IA → usando fallback")
-            return fallback_classificacao(email_content)
+            print("[LOG] Resposta inesperada da IA → fallback")
+            return fallback_classificacao(email_content, heuristica_produtivo)
 
         except requests.exceptions.Timeout:
             print(f"[LOG] Timeout na API, tentativa {attempt+1}/3...")
             time.sleep(2)
         except Exception as e:
-            print(f"[LOG] Erro na API Hugging Face: {e}")
+            print(f"[LOG] Erro na API: {e}")
             time.sleep(2)
 
-    print("[LOG] Todas as tentativas falharam → usando fallback")
-    return fallback_classificacao(email_content)
+    print("[LOG] Todas as tentativas falharam → fallback")
+    return fallback_classificacao(email_content, heuristica_produtivo)
 
 
-# ==============================
-# FALLBACK FINAL
-# ==============================
-def fallback_classificacao(email_content: str) -> str:
+def fallback_classificacao(email_content: str, heuristica_produtivo: bool) -> str:
     """
-    Classificação de fallback baseada em regras simples.
-    Se palavras-chave produtivas estiverem presentes, retorna 'Produtivo', senão 'Improdutivo'.
-    Isso garante que sempre haja uma classificação, mesmo se a IA falhar.
+    Classificação baseada apenas em heurísticas.
+    Golpes têm prioridade > marketing > produtivo.
     """
     lower_content = email_content.lower()
-    if any(k in lower_content for k in KEYWORDS_PRODUTIVO):
-        return "Produtivo"
-    if any(k in lower_content for k in KEYWORDS_IMPRODUTIVO):
+    if any(k in lower_content for k in KEYWORDS_GOLPE):
         return "Improdutivo"
+    if any(k in lower_content for k in KEYWORDS_MARKETING):
+        return "Improdutivo"
+    if heuristica_produtivo:
+        return "Produtivo"
     return "Improdutivo"

@@ -20,25 +20,39 @@ if not HF_TOKEN:
 client = InferenceClient(api_key=HF_TOKEN)
 
 
+def limpar_raciocinio_interno(texto: str) -> str:
+    """
+    Remove qualquer frase que pareça raciocínio interno ou conteúdo não solicitado.
+    """
+    # Remove textos comuns de pensamento do modelo (em inglês e português)
+    padroes = [
+        r"(?i)(let me|i should|they want|maybe|so i|alright|let's|okay,|então vou|preciso|vou pensar|deixa eu).*",
+        r"(?i)(analisando|pensando|raciocínio|planejando).*"
+    ]
+    for padrao in padroes:
+        texto = re.sub(padrao, "", texto).strip()
+    return texto
+
 def extrair_resposta_final(texto: str) -> str:
     """
     Extrai apenas a resposta formal final de uma saída do modelo,
     removendo qualquer raciocínio interno.
     """
-    # Tenta capturar a resposta a partir de um cumprimento formal
+    texto = limpar_raciocinio_interno(texto)
+
+    # Captura mensagens que começam com cumprimentos
     padrao = r"(?:Prezado|Prezada|Prezados|Olá|Caro|Cara|Bom dia|Boa tarde|Boa noite)[\s\S]+"
     match = re.search(padrao, texto, flags=re.IGNORECASE)
     if match:
         return match.group(0).strip()
 
-    # Se não encontrar cumprimento formal, pega a última seção após duas quebras de linha
+    # Se não encontrar, pega o último bloco após duas quebras de linha
     partes = texto.strip().split("\n\n")
     if len(partes) > 1:
-        return partes[-1].strip()
+        return limpar_raciocinio_interno(partes[-1].strip())
 
-    # Caso nada seja detectado, retorna todo o texto como fallback
+    # Caso nada seja detectado, retorna todo o texto limpo
     return texto.strip()
-
 
 def gerar_resposta_chat(texto_email: str, categoria: str) -> str:
     """
@@ -48,22 +62,22 @@ def gerar_resposta_chat(texto_email: str, categoria: str) -> str:
     if categoria == "Produtivo":
         prompt = (
             "Você é um assistente profissional. "
-            "IMPORTANTE: A sua tarefa é gerar APENAS a mensagem final pronta para ser enviada. "
-            "NUNCA explique o seu raciocínio, NUNCA descreva seus pensamentos internos, "
-            "NÃO diga o que vai fazer, NÃO mostre anotações, NEM comentários internos. "
-            "Responda diretamente como se estivesse enviando o email ao usuário.\n\n"
+            "IMPORTANTE: Sua tarefa é responder APENAS com a mensagem final pronta para envio. "
+            "PROIBIDO explicar raciocínio, planejar a resposta ou dar justificativas. "
+            "NÃO escreva nada sobre o que você vai fazer, NEM descreva seus pensamentos. "
+            "Responda SOMENTE em português, com uma mensagem clara, educada e profissional.\n\n"
             f"Email recebido:\n{texto_email}\n\n"
-            "Responda com uma mensagem educada, clara e profissional."
+            "Mensagem final:"
         )
     else:  # Improdutivo
         prompt = (
             "Você é um assistente cordial. "
-            "IMPORTANTE: A sua tarefa é gerar APENAS a mensagem final pronta para ser enviada. "
-            "NUNCA explique o seu raciocínio, NUNCA descreva seus pensamentos internos, "
-            "NÃO diga o que vai fazer, NEM mostre comentários internos. "
-            "Responda diretamente como se estivesse enviando o email ao usuário.\n\n"
+            "IMPORTANTE: Sua tarefa é responder APENAS com a mensagem final pronta para envio. "
+            "PROIBIDO explicar raciocínio, planejar a resposta ou dar justificativas. "
+            "NÃO escreva nada sobre o que você vai fazer, NEM descreva seus pensamentos. "
+            "Responda SOMENTE em português, com uma mensagem curta, amigável e educada.\n\n"
             f"Email recebido:\n{texto_email}\n\n"
-            "Responda com uma mensagem curta, amigável e educada."
+            "Mensagem final:"
         )
 
     try:
@@ -73,7 +87,7 @@ def gerar_resposta_chat(texto_email: str, categoria: str) -> str:
         )
         resposta = completion.choices[0].message["content"].strip()
 
-        # Extrair somente a resposta formal final
+        # Limpar e extrair somente a resposta final
         resposta_final = extrair_resposta_final(resposta)
 
         print(f"[LOG] Resposta final:\n{resposta_final}\n")
@@ -83,7 +97,6 @@ def gerar_resposta_chat(texto_email: str, categoria: str) -> str:
         print(f"[LOG] Erro ao gerar resposta via Hugging Face: {e}")
         return texto_fallback(categoria)
 
-
 def texto_fallback(categoria: str) -> str:
     """Texto seguro caso a API falhe"""
     if categoria == "Produtivo":
@@ -91,10 +104,8 @@ def texto_fallback(categoria: str) -> str:
     else:
         return "Obrigado pelo seu email. Desejamos um ótimo dia!"
 
-
 def resposta_sugerida(texto_email: str, categoria: str) -> str:
     """Sugere uma resposta para o email baseado na categoria"""
     return gerar_resposta_chat(texto_email, categoria)
-
 
 gerar_resposta = gerar_resposta_chat
