@@ -19,7 +19,7 @@ HF_API_TOKEN = os.getenv("HF_API_TOKEN")
 if not HF_API_TOKEN:
     raise ValueError("Defina HF_API_TOKEN no .env")
 
-HF_MODEL = "facebook/bart-large-mnli"
+HF_MODEL = "joeddav/xlm-roberta-large-xnli"
 HF_API_URL = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
 HEADERS = {"Authorization": f"Bearer {HF_API_TOKEN}"}
 
