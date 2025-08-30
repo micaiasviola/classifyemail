@@ -10,6 +10,8 @@ Você pode acessar o sistema diretamente pelo navegador, sem instalar nada:
 
 [https://classifyemail.onrender.com/](https://classifyemail.onrender.com/)
 
+Dar F5 até o servidor inicializar
+
 ---
 
 ## 🚀 Como Utilizar o Site
