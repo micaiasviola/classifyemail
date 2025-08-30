@@ -72,7 +72,7 @@ KEYWORDS_MARKETING = [
 def classificar_email(email_content: str) -> str:
     """
     Classifica um email como Produtivo ou Improdutivo usando IA Zero-Shot.
-    Inclui heurísticas fortes para golpes, thresholds mais altos e logs detalhados.
+    Incluí heurísticas fortes para golpes, thresholds mais altos e logs detalhados.
     """
     # Normaliza espaços e caracteres
     email_content = re.sub(r"\s+", " ", email_content).strip()
@@ -115,20 +115,22 @@ def classificar_email(email_content: str) -> str:
             response.raise_for_status()
             result = response.json()
 
+            # Verifica se o resultado da API contém as chaves esperadas "labels" e "scores"
             if "labels" in result and "scores" in result:
                 labels = result["labels"]
                 scores = result["scores"]
 
                 # Log detalhado
                 print("\n[LOG] --- RESULTADO IA ---")
+                # Percorre cada par de label e score para log
                 for label, score in zip(labels, scores):
                     print(f"[LOG] {label}: {score:.4f}")
                 print("[LOG] ----------------------")
 
-                top_score = scores[0]
+                top_score = scores[0] # Maior score, API da hugging face já ordena em orden decrescente
                 second_score = scores[1] if len(scores) > 1 else 0
-                top_label = labels[0]
-                final_label = LABEL_MAP.get(top_label, "Improdutivo")
+                top_label = labels[0] # Pega o label com maior score
+                final_label = LABEL_MAP.get(top_label, "Improdutivo") # Utiliza o LABEL_MAP para converter para "Produtivo" ou "Improdutivo"
 
                 # 5) Confiança mínima — só confia se score for bem alto
                 if top_score < CONFIDENCE_THRESHOLD or (top_score - second_score) < CONFIDENCE_MARGIN:
